@@ -1679,6 +1679,9 @@ void adjustOpenFilesLimit(void) {
     rlim_t maxfiles = server.maxclients+CONFIG_MIN_RESERVED_FDS;
     struct rlimit limit;
 
+	//获取或设定资源使用限制
+	//RLIMIT_NOFILE 
+	//			指定比进程可打开的最大文件描述词大一的值，超出此值，将会产生EMFILE错误。
     if (getrlimit(RLIMIT_NOFILE,&limit) == -1) {
         serverLog(LL_WARNING,"Unable to obtain the current NOFILE limit (%s), assuming 1024 and setting the max clients configuration accordingly.",
             strerror(errno));
@@ -1688,7 +1691,7 @@ void adjustOpenFilesLimit(void) {
 
         /* Set the max number of files if the current limit is not enough
          * for our needs. */
-        if (oldlimit < maxfiles) {
+        if (oldlimit < maxfiles) {    //
             rlim_t bestlimit;
             int setrlimit_error = 0;
 
@@ -1904,17 +1907,21 @@ void initServer(void) {
     server.system_memory_size = zmalloc_get_memory_size();
 
     createSharedObjects();
-    adjustOpenFilesLimit();
-    server.el = aeCreateEventLoop(server.maxclients+CONFIG_FDSET_INCR);
+    adjustOpenFilesLimit();    //设置文件大小??
+    server.el = aeCreateEventLoop(server.maxclients+CONFIG_FDSET_INCR);    //创建epoll
     server.db = zmalloc(sizeof(redisDb)*server.dbnum);
 
     /* Open the TCP listening socket for the user commands. */
-    if (server.port != 0 &&
+    if (server.port != 0 &&    //开始tcp监听
         listenToPort(server.port,server.ipfd,&server.ipfd_count) == C_ERR)
         exit(1);
 
+
+	//Q:unix domian socket用于什么?
     /* Open the listening Unix domain socket. */
     if (server.unixsocket != NULL) {
+		/*1.销毁unixsocket
+		* 2.*/
         unlink(server.unixsocket); /* don't care if this fails */
         server.sofd = anetUnixServer(server.neterr,server.unixsocket,
             server.unixsocketperm, server.tcp_backlog);
